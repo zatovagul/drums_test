@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:drums_test/app/services/audio_service.dart';
 import 'package:flutter/material.dart';
 
@@ -27,6 +28,8 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   late TextEditingController controller;
   late AudioService audioService;
+  Map<String, AudioPlayer> sounds={};
+  bool start=false, metronom=false, stringSound=false;
 
   @override
   void initState() {
@@ -42,13 +45,25 @@ class _MainPageState extends State<MainPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           getButton(
-            () {print("fuck");},
+            () {
+              if(!start)
+              setState((){
+                metronom=!metronom;
+              });
+            },
             Text("!._.!._.", style: _style,),
+            BoxDecoration(color: metronom ? Colors.green : Colors.white)
           ),
           SizedBox(height: 15,),
           getButton(
-                () {print("fuck");},
-            Text("BBT_BBT_", style: _style,),
+                () {
+                  if(!start)
+                  setState(() {
+                    stringSound=!stringSound;
+                  });
+                },
+              Text("BBT_BBT_", style: _style,),
+              BoxDecoration(color: stringSound ? Colors.green : Colors.white)
           ), SizedBox(height: 15,),
           Container(
             height: 40,
@@ -62,30 +77,28 @@ class _MainPageState extends State<MainPage> {
             ),
           ),SizedBox(height: 15,),
           Container(
-            child: Center(
-              child: Container(
-                color: Colors.white,
-                height: 80, width: 80,
-                child: TextButton(
-                  onPressed: (){
-                    audioService.playBas();
-                  },
-                  child: Text("B", style: _style.copyWith(fontSize: 30),),
-                ),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                getSoundButton("B", (){audioService.playBas();}),SizedBox(width: 10,),
+                getSoundButton("T", (){audioService.playTon();}),SizedBox(width: 10,),
+                getSoundButton("S", (){audioService.playSlap();}),
+              ],
             ),
           ),
           SizedBox(height: 15,),
           getButton(
-                () {},
+                () {
+                  if(!start)_setStart(true);
+                  },
             Text("Старт", style: _style,),
-            BoxDecoration(color: Colors.white)
+            BoxDecoration(color: start ? Colors.green : Colors.white)
           ),
           SizedBox(height: 15,),
           getButton(
-                () {},
+                () {if(start)_setStart(false);},
             Text("Стоп", style: _style,),
-              BoxDecoration(color: Colors.green)
+              BoxDecoration(color:!start ? Colors.red : Colors.white)
           ),
         ],
       ),
@@ -101,5 +114,46 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  Widget getSoundButton(String s, onTap){
+    return Container(
+      color: Colors.white,
+      height: 80,
+      width: 80,
+      child: Material(
+        child: InkWell(
+          enableFeedback: false,
+          splashColor: Colors.brown,
+          onTap: onTap,
+          child: Center(child: Text(s, style: _style.copyWith(fontSize: 30),)),
+        ),
+      ),
+    );
+  }
+
   TextStyle get _style=>TextStyle(fontSize: 20, color: Colors.black);
+
+
+  _setStart(a){
+    setState(() {
+      start=a;
+    });
+    if(a){
+      if(stringSound)
+      _playString("BBT_BBT_");
+      if(metronom)
+      _playString("!._.!._.");
+
+      if(!stringSound && !metronom)
+        _setStart(false);
+    }
+    else{
+      audioService.stringPause=true;
+    }
+  }
+  _playString(String s) async{
+    int a = int.parse((1000/(int.parse(controller.text)/60)).toStringAsFixed(0));
+    while(start){
+      await audioService.playString(s, duration: a);
+    }
+  }
 }
